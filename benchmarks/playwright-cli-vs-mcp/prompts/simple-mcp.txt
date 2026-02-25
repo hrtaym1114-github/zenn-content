@@ -1,0 +1,1 @@
+Playwright MCPツール（mcp__playwright__browser_* 系）を使って https://demo.playwright.dev/todomvc/ を開き、ページに表示されているすべてのUI要素（見出し、入力欄、フッターなど）をテキストベースで報告してください。操作完了後にブラウザを閉じてください。
