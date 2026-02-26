@@ -5,6 +5,11 @@
 # Usage:
 #   ./run-trial.sh <method> <scenario> <trial_number>
 #   例: ./run-trial.sh cli simple 1
+#
+# フロー:
+#   STEP 1: 環境設定コマンドを表示 → 手動でターミナル2にコピーしてClaude起動
+#   STEP 2: Enter → プロンプトをクリップボードにコピー → ターミナル2に貼り付け
+#   STEP 3: Claude完了・/exit後 → Enter → ログ回収・結果生成
 
 set -euo pipefail
 
@@ -26,6 +31,15 @@ if [ ! -f "$PROMPT_FILE" ]; then
   exit 1
 fi
 
+# 手法に応じてツール制限フラグを生成
+if [ "$METHOD" = "cli" ]; then
+  TOOL_FLAG='--disallowedTools "mcp__playwright__*"'
+  TOOL_NOTE="mcp__playwright__* ブロック済み → Bash + playwright-cli のみ"
+elif [ "$METHOD" = "mcp" ]; then
+  TOOL_FLAG='--disallowedTools "Bash"'
+  TOOL_NOTE="Bash ブロック済み → mcp__playwright__* のみ"
+fi
+
 echo ""
 echo "╔════════════════════════════════════════════╗"
 echo "║  Playwright CLI vs MCP ベンチマーク        ║"
@@ -35,51 +49,52 @@ printf "║  手法:     %-30s ║\n" "${METHOD_UPPER}"
 printf "║  シナリオ: %-30s ║\n" "${SCENARIO}"
 printf "║  試行:     %-30s ║\n" "#${TRIAL}"
 echo "╚════════════════════════════════════════════╝"
-echo ""
 
-# プロンプトをクリップボードにコピー
-cat "$PROMPT_FILE" | pbcopy
-echo "✓ プロンプトをクリップボードにコピーしました"
+# =============================================
+# STEP 1: Claude 起動
+# =============================================
 echo ""
-echo "--- 使用プロンプト ---"
+echo "━━━ STEP 1/3: ターミナル2で Claude を起動 ━━━"
+echo ""
+echo "  以下をターミナル2にコピーして実行:"
+echo ""
+echo "  CLAUDE_CODE_ENABLE_TELEMETRY=1 \\"
+echo "  OTEL_METRICS_EXPORTER=console \\"
+echo "  OTEL_METRIC_EXPORT_INTERVAL=5000 \\"
+echo "  claude --no-chrome ${TOOL_FLAG} 2>${OTEL_LOG}"
+echo ""
+echo "  (${TOOL_NOTE})"
+echo ""
+read "?Claude が起動したら Enter..."
+
+# =============================================
+# STEP 2: プロンプトをコピー → 貼り付け
+# =============================================
+echo ""
+echo "━━━ STEP 2/3: プロンプトを貼り付けて実行 ━━━"
+echo ""
+cat "$PROMPT_FILE" | pbcopy
+echo "  ✓ プロンプトをクリップボードにコピーしました！"
+echo ""
+echo "  --- プロンプト内容 ---"
 cat "$PROMPT_FILE"
 echo ""
-# 手法に応じてツール制限フラグを生成
-if [ "$METHOD" = "cli" ]; then
-  # CLI試行: Playwright MCPツールを全てブロック → Bash経由のCLIのみ使える
-  TOOL_FLAG='--disallowedTools "mcp__playwright__*"'
-elif [ "$METHOD" = "mcp" ]; then
-  # MCP試行: Bashをブロック → MCPツールのみ使える
-  TOOL_FLAG='--disallowedTools "Bash"'
-fi
-
-echo "─────────────────────────────────────────────"
-echo " 別ターミナルで以下を実行:"
+echo "  -----------------------"
 echo ""
-echo "   CLAUDE_CODE_ENABLE_TELEMETRY=1 \\"
-echo "   OTEL_METRICS_EXPORTER=console \\"
-echo "   OTEL_METRIC_EXPORT_INTERVAL=5000 \\"
-echo "   claude --no-chrome ${TOOL_FLAG} 2>${OTEL_LOG}"
-echo ""
-echo "   セッション内で:"
-echo "   1. Cmd+V で貼り付け → Enter"
-echo "   2. タスク完了を待つ（介入しない）"
-echo "   3. /exit"
-echo ""
-if [ "$METHOD" = "cli" ]; then
-  echo "   ⚠ mcp__playwright__* ツールはブロック済み"
-  echo "     → Bash経由の playwright-cli のみ使用可能"
-else
-  echo "   ⚠ Bash ツールはブロック済み"
-  echo "     → mcp__playwright__* ツールのみ使用可能"
-fi
-echo "─────────────────────────────────────────────"
+echo "  ターミナル2で Cmd+V → Enter"
+echo "  タスク完了を待ち、/exit で終了"
 echo ""
 
 START_TIME=$(date +%s)
-read "?セッション完了後 Enter を押す..."
+read "?/exit 完了後 Enter..."
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))
+
+# =============================================
+# STEP 3: ログ回収 + 結果生成
+# =============================================
+echo ""
+echo "━━━ STEP 3/3: ログ回収 ━━━"
 
 # --- OTel ログからトークン集計 ---
 INPUT_TOKENS=0
@@ -87,11 +102,10 @@ OUTPUT_TOKENS=0
 CACHE_READ=0
 CACHE_CREATION=0
 
-if [ -f "$OTEL_LOG" ]; then
+if [ -f "$OTEL_LOG" ] && [ -s "$OTEL_LOG" ]; then
   echo ""
-  echo "✓ OTelログ検出: ${OTEL_LOG}"
+  echo "  ✓ OTelログ検出: ${OTEL_LOG}"
 
-  # token.usage メトリクスを抽出して集計
   INPUT_TOKENS=$(grep -o '"type":"input"[^}]*"value":[0-9]*' "$OTEL_LOG" 2>/dev/null \
     | grep -o '"value":[0-9]*' | grep -o '[0-9]*' \
     | awk '{s+=$1} END {print s+0}')
@@ -105,16 +119,16 @@ if [ -f "$OTEL_LOG" ]; then
     | grep -o '"value":[0-9]*' | grep -o '[0-9]*' \
     | awk '{s+=$1} END {print s+0}')
 
-  echo "  Input tokens:    ${INPUT_TOKENS}"
-  echo "  Output tokens:   ${OUTPUT_TOKENS}"
-  echo "  Cache read:      ${CACHE_READ}"
-  echo "  Cache creation:  ${CACHE_CREATION}"
+  echo "    Input tokens:    ${INPUT_TOKENS}"
+  echo "    Output tokens:   ${OUTPUT_TOKENS}"
+  echo "    Cache read:      ${CACHE_READ}"
+  echo "    Cache creation:  ${CACHE_CREATION}"
 else
   echo ""
-  echo "⚠ OTelログが見つかりません: ${OTEL_LOG}"
-  echo "  手動でトークン数を入力してください"
-  read "INPUT_TOKENS?  Input tokens:   "
-  read "OUTPUT_TOKENS?  Output tokens:  "
+  echo "  ⚠ OTelログが空または見つかりません: ${OTEL_LOG}"
+  echo "    手動でトークン数を入力してください"
+  read "INPUT_TOKENS?    Input tokens:   "
+  read "OUTPUT_TOKENS?    Output tokens:  "
   CACHE_READ=0
   CACHE_CREATION=0
 fi
@@ -122,8 +136,8 @@ fi
 TOTAL_TOKENS=$((INPUT_TOKENS + OUTPUT_TOKENS))
 
 # ツール呼び出し回数（手動入力）
-read "TOOL_CALLS?ツール呼び出し回数: "
-read "SUCCESS?タスク成功? (y/n): "
+read "TOOL_CALLS?  ツール呼び出し回数: "
+read "SUCCESS?  タスク成功? (y/n): "
 
 if [ "$SUCCESS" = "y" ]; then
   SUCCESS_STR="YES"
@@ -138,13 +152,13 @@ TOKENS_CSV=""
 if [ -f "$HOME/.claude/debug/latest" ]; then
   cp "$HOME/.claude/debug/latest" "$DEBUG_DEST"
   echo ""
-  echo "✓ デバッグログ保存: ${DEBUG_DEST}"
+  echo "  ✓ デバッグログ保存: ${DEBUG_DEST}"
 
   TOKENS_CSV=$(grep "autocompact: tokens=" "$DEBUG_DEST" | sed 's/.*tokens=\([0-9]*\).*/\1/' | tr '\n' ',')
   CONTEXT_MAX=$(grep "autocompact: tokens=" "$DEBUG_DEST" | sed 's/.*tokens=\([0-9]*\).*/\1/' | sort -n | tail -1)
   if [ -n "$CONTEXT_MAX" ]; then
-    echo "  コンテキスト推移: ${TOKENS_CSV%,}"
-    echo "  コンテキスト最大: ${CONTEXT_MAX}"
+    echo "    コンテキスト推移: ${TOKENS_CSV%,}"
+    echo "    コンテキスト最大: ${CONTEXT_MAX}"
   fi
 fi
 
@@ -180,7 +194,7 @@ ${TOKENS_CSV%,}
 RESULT_EOF
 
 echo ""
-echo "✓ 結果ファイル保存: ${RESULT_FILE}"
+echo "  ✓ 結果ファイル保存: ${RESULT_FILE}"
 echo ""
 echo "╔════════════════════════════════════════════╗"
 printf "║  %-42s ║\n" "${TRIAL_ID} 完了"

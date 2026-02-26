@@ -4,38 +4,34 @@
 
 Max plan では `/cost` が使えないため、**OpenTelemetry コンソール出力**でトークン数を自動収集する。
 
-Claude Code 起動時に環境変数を設定すると、stderr に `claude_code.token.usage` メトリクスが出力される。スクリプトがこれをパースして input/output/cacheRead/cacheCreation 別に集計する。
-
 ## すぐ始める手順
-
-### ターミナル1（記録用）
 
 ```bash
 cd ~/Desktop/work1/zenn-content
 ./benchmarks/playwright-cli-vs-mcp/run-trial.sh cli simple 1
 ```
 
-スクリプトがプロンプトをクリップボードにコピーし、ターミナル2で実行するコマンドを表示する。
+### STEP 1: Claude を起動
 
-### ターミナル2（計測用）
+スクリプトが表示する起動コマンドをターミナル2にコピペして実行。
+クリップボードはまだ使わないので自由にコピーしてOK。
 
-スクリプトが表示するコマンドをそのままコピペ:
-
-```bash
-CLAUDE_CODE_ENABLE_TELEMETRY=1 \
-OTEL_METRICS_EXPORTER=console \
-OTEL_METRIC_EXPORT_INTERVAL=5000 \
-claude --no-chrome 2>raw-logs/cli/cli-simple-trial1-otel.log
+```
+Enter を押す
 ```
 
-セッション内で:
-1. `Cmd+V` で貼り付け → Enter
-2. タスク完了まで待つ（何も入力しない）
-3. `/exit`
+### STEP 2: プロンプトを貼り付け
 
-### ターミナル1に戻る
+Enter を押すとプロンプトがクリップボードにコピーされる。
+ターミナル2で Cmd+V → Enter → タスク完了を待つ → `/exit`
 
-Enter → ツール呼び出し回数を入力 → 結果ファイルが自動生成される
+```
+Enter を押す
+```
+
+### STEP 3: ログ回収
+
+OTelログを自動パース → ツール回数を入力 → 結果ファイル生成。
 
 ## 実行順序（全18試行）
 
@@ -66,8 +62,9 @@ Enter → ツール呼び出し回数を入力 → 結果ファイルが自動�
 
 ## 注意事項
 
-- MCP版: Claude が `claude-in-chrome` ではなく `mcp__playwright__browser_*` ツールを使っているか確認
-- 各試行は必ず新規セッション（`claude --no-chrome`）で開始
+- CLI試行: `--disallowedTools "mcp__playwright__*"` で MCPツール自動ブロック
+- MCP試行: `--disallowedTools "Bash"` で Bashツール自動ブロック
+- 各試行は必ず新規セッションで開始
 - タスク実行中は人間の追加入力をしない
-- `2>ファイル` で stderr をリダイレクトしないとOTelデータが取れない
+- `2>ファイル` の stderr リダイレクトを忘れないこと（OTelデータ取得に必須）
 - 全試行完了後、`results/summary.md` に中央値を集計する
