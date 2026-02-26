@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/hrtaym1114-github/zenn-content#readme",
   "dependencies": {
+    "playwright": "^1.58.2",
     "zenn-cli": "^0.4.5"
   }
 }

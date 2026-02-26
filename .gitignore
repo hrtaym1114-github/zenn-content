@@ -1,4 +1,8 @@
 node_modules
 .DS_Store
 .playwright-cli
+.playwright-mcp
+test-results
 benchmarks/playwright-cli-vs-mcp/raw-logs
+benchmarks/playwright-cli-vs-mcp/prompts/.playwright-mcp
+benchmarks/playwright-cli-vs-mcp/prompts/logs
