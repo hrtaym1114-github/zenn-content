@@ -56,14 +56,18 @@ echo "╚═══════════════════════�
 echo ""
 echo "━━━ STEP 1/3: ターミナル2で Claude を起動 ━━━"
 echo ""
-echo "  以下をターミナル2にコピーして実行:"
+echo "  ⚠ 必ず以下のコマンドをそのままコピーして実行してください"
+echo "  ⚠ --resume は使わないでください（新規セッション必須）"
 echo ""
-echo "  CLAUDE_CODE_ENABLE_TELEMETRY=1 \\"
-echo "  OTEL_METRICS_EXPORTER=console \\"
-echo "  OTEL_METRIC_EXPORT_INTERVAL=5000 \\"
-echo "  claude --no-chrome --dangerously-skip-permissions ${TOOL_FLAG} 2>${OTEL_LOG}"
+LAUNCH_CMD="CLAUDE_CODE_ENABLE_TELEMETRY=1 OTEL_METRICS_EXPORTER=console OTEL_METRIC_EXPORT_INTERVAL=5000 claude --no-chrome --dangerously-skip-permissions ${TOOL_FLAG} 2>${OTEL_LOG}"
+echo "  ${LAUNCH_CMD}"
 echo ""
 echo "  (${TOOL_NOTE})"
+echo ""
+# 起動コマンドをクリップボードにコピー（STEP2でプロンプトに上書きされる）
+echo "$LAUNCH_CMD" | pbcopy
+echo "  ✓ 起動コマンドをクリップボードにコピーしました"
+echo "    → ターミナル2で Cmd+V → Enter"
 echo ""
 read "?Claude が起動したら Enter..."
 
