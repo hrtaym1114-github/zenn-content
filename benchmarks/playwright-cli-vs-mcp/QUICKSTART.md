@@ -2,7 +2,11 @@
 
 ## 計測方法
 
-Max plan では `/cost` が使えないため、**OpenTelemetry コンソール出力**でトークン数を自動収集する。
+`CLAUDE_CODE_ENABLE_TELEMETRY=1` で起動すると、デバッグログ (`~/.claude/debug/`) に
+`claude_code.token.usage` メトリクスが記録される。スクリプトがこれを自動パースして
+input/output/cacheRead/cacheCreation 別にトークン数を集計する。
+
+stderrリダイレクト不要。OTelコンソールエクスポーター不要。
 
 ## すぐ始める手順
 
@@ -13,8 +17,8 @@ cd ~/Desktop/work1/zenn-content
 
 ### STEP 1: Claude を起動
 
-スクリプトが表示する起動コマンドをターミナル2にコピペして実行。
-クリップボードはまだ使わないので自由にコピーしてOK。
+起動コマンドがクリップボードにコピーされる。
+ターミナル2で Cmd+V → Enter。
 
 ```
 Enter を押す
@@ -31,7 +35,7 @@ Enter を押す
 
 ### STEP 3: ログ回収
 
-OTelログを自動パース → ツール回数を入力 → 結果ファイル生成。
+デバッグログからトークン数を自動抽出 → ツール回数を入力 → 結果ファイル生成。
 
 ## 実行順序（全18試行）
 
@@ -62,9 +66,9 @@ OTelログを自動パース → ツール回数を入力 → 結果ファイル
 
 ## 注意事項
 
+- `--resume` は絶対に使わない（新規セッション必須）
 - CLI試行: `--disallowedTools "mcp__playwright__*"` で MCPツール自動ブロック
 - MCP試行: `--disallowedTools "Bash"` で Bashツール自動ブロック
 - 各試行は必ず新規セッションで開始
 - タスク実行中は人間の追加入力をしない
-- `2>ファイル` の stderr リダイレクトを忘れないこと（OTelデータ取得に必須）
 - 全試行完了後、`results/summary.md` に中央値を集計する
