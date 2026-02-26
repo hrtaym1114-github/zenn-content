@@ -3,46 +3,48 @@
 ## 計測環境
 
 - Claude Code: v2.1.58
+- Plan: Claude Max
 - Model: claude-opus-4-6
 - OS: macOS Darwin 25.3.0
 - @playwright/cli: v1.59.0-alpha-1771104257000
 - @playwright/mcp: latest (stdio via npx)
+- 計測方法: OpenTelemetry console exporter (`claude_code.token.usage`)
 - 計測日: 2026-02-26
 
 ## 結果一覧
 
 ### Simple: ページ読み取り
 
-| 試行 | 手法 | Input tokens | Output tokens | Total tokens | Cost | ツール回数 |
-|------|------|-------------|---------------|-------------|------|-----------|
-| 1 | CLI | | | | | |
-| 2 | CLI | | | | | |
-| 3 | CLI | | | | | |
-| 1 | MCP | | | | | |
-| 2 | MCP | | | | | |
-| 3 | MCP | | | | | |
+| 試行 | 手法 | Input | Output | Cache read | Cache creation | Total | ツール回数 |
+|------|------|-------|--------|------------|----------------|-------|-----------|
+| 1 | CLI | | | | | | |
+| 2 | CLI | | | | | | |
+| 3 | CLI | | | | | | |
+| 1 | MCP | | | | | | |
+| 2 | MCP | | | | | | |
+| 3 | MCP | | | | | | |
 
 ### Medium: フォーム入力
 
-| 試行 | 手法 | Input tokens | Output tokens | Total tokens | Cost | ツール回数 |
-|------|------|-------------|---------------|-------------|------|-----------|
-| 1 | CLI | | | | | |
-| 2 | CLI | | | | | |
-| 3 | CLI | | | | | |
-| 1 | MCP | | | | | |
-| 2 | MCP | | | | | |
-| 3 | MCP | | | | | |
+| 試行 | 手法 | Input | Output | Cache read | Cache creation | Total | ツール回数 |
+|------|------|-------|--------|------------|----------------|-------|-----------|
+| 1 | CLI | | | | | | |
+| 2 | CLI | | | | | | |
+| 3 | CLI | | | | | | |
+| 1 | MCP | | | | | | |
+| 2 | MCP | | | | | | |
+| 3 | MCP | | | | | | |
 
 ### Complex: マルチステップ
 
-| 試行 | 手法 | Input tokens | Output tokens | Total tokens | Cost | ツール回数 |
-|------|------|-------------|---------------|-------------|------|-----------|
-| 1 | CLI | | | | | |
-| 2 | CLI | | | | | |
-| 3 | CLI | | | | | |
-| 1 | MCP | | | | | |
-| 2 | MCP | | | | | |
-| 3 | MCP | | | | | |
+| 試行 | 手法 | Input | Output | Cache read | Cache creation | Total | ツール回数 |
+|------|------|-------|--------|------------|----------------|-------|-----------|
+| 1 | CLI | | | | | | |
+| 2 | CLI | | | | | | |
+| 3 | CLI | | | | | | |
+| 1 | MCP | | | | | | |
+| 2 | MCP | | | | | | |
+| 3 | MCP | | | | | | |
 
 ## 集計（中央値）
 

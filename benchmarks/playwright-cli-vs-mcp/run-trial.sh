@@ -1,16 +1,10 @@
 #!/bin/zsh
 # Playwright CLI vs MCP ベンチマーク 試行実行ヘルパー
+# 計測方法: OpenTelemetry コンソール出力 + デバッグログ
 #
 # Usage:
 #   ./run-trial.sh <method> <scenario> <trial_number>
 #   例: ./run-trial.sh cli simple 1
-#
-# 手順:
-#   1. スクリプトがプロンプトをクリップボードにコピー
-#   2. 別ターミナルで新規 Claude Code セッションを開始
-#   3. /cost → プロンプト貼り付け → 完了後 /cost
-#   4. このスクリプトに戻ってコスト値を入力
-#   5. デバッグログ自動保存 + 結果ファイル生成
 
 set -euo pipefail
 
@@ -25,6 +19,7 @@ PROMPTS_DIR="${BASE_DIR}/prompts"
 LOGS_DIR="${BASE_DIR}/raw-logs/${METHOD}"
 RESULTS_DIR="${BASE_DIR}/results"
 PROMPT_FILE="${PROMPTS_DIR}/${SCENARIO}-${METHOD}.txt"
+OTEL_LOG="${LOGS_DIR}/${TRIAL_ID}-otel.log"
 
 if [ ! -f "$PROMPT_FILE" ]; then
   echo "ERROR: プロンプトファイルが見つかりません: $PROMPT_FILE"
@@ -52,27 +47,66 @@ echo ""
 echo "─────────────────────────────────────────────"
 echo " 別ターミナルで以下を実行:"
 echo ""
-echo "   1. claude --no-chrome"
-echo "   2. /cost          ← ベースライン確認"
-echo "   3. Cmd+V で貼り付け → Enter"
-echo "   4. タスク完了を待つ（介入しない）"
-echo "   5. /cost          ← 最終値を確認"
-echo "   6. /exit"
+echo "   CLAUDE_CODE_ENABLE_TELEMETRY=1 \\"
+echo "   OTEL_METRICS_EXPORTER=console \\"
+echo "   OTEL_METRIC_EXPORT_INTERVAL=5000 \\"
+echo "   claude --no-chrome 2>${OTEL_LOG}"
+echo ""
+echo "   セッション内で:"
+echo "   1. Cmd+V で貼り付け → Enter"
+echo "   2. タスク完了を待つ（介入しない）"
+echo "   3. /exit"
 echo "─────────────────────────────────────────────"
 echo ""
 
 START_TIME=$(date +%s)
-read -p "セッション完了後 Enter を押す..."
+read "?セッション完了後 Enter を押す..."
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))
 
-echo ""
-echo "--- コスト記録 ---"
-read -p "Input tokens (最終値):  " INPUT_TOKENS
-read -p "Output tokens (最終値): " OUTPUT_TOKENS
-read -p "Total cost USD:         " TOTAL_COST
-read -p "ツール呼び出し回数:     " TOOL_CALLS
-read -p "タスク成功? (y/n):      " SUCCESS
+# --- OTel ログからトークン集計 ---
+INPUT_TOKENS=0
+OUTPUT_TOKENS=0
+CACHE_READ=0
+CACHE_CREATION=0
+
+if [ -f "$OTEL_LOG" ]; then
+  echo ""
+  echo "✓ OTelログ検出: ${OTEL_LOG}"
+
+  # token.usage メトリクスを抽出して集計
+  INPUT_TOKENS=$(grep -o '"type":"input"[^}]*"value":[0-9]*' "$OTEL_LOG" 2>/dev/null \
+    | grep -o '"value":[0-9]*' | grep -o '[0-9]*' \
+    | awk '{s+=$1} END {print s+0}')
+  OUTPUT_TOKENS=$(grep -o '"type":"output"[^}]*"value":[0-9]*' "$OTEL_LOG" 2>/dev/null \
+    | grep -o '"value":[0-9]*' | grep -o '[0-9]*' \
+    | awk '{s+=$1} END {print s+0}')
+  CACHE_READ=$(grep -o '"type":"cacheRead"[^}]*"value":[0-9]*' "$OTEL_LOG" 2>/dev/null \
+    | grep -o '"value":[0-9]*' | grep -o '[0-9]*' \
+    | awk '{s+=$1} END {print s+0}')
+  CACHE_CREATION=$(grep -o '"type":"cacheCreation"[^}]*"value":[0-9]*' "$OTEL_LOG" 2>/dev/null \
+    | grep -o '"value":[0-9]*' | grep -o '[0-9]*' \
+    | awk '{s+=$1} END {print s+0}')
+
+  echo "  Input tokens:    ${INPUT_TOKENS}"
+  echo "  Output tokens:   ${OUTPUT_TOKENS}"
+  echo "  Cache read:      ${CACHE_READ}"
+  echo "  Cache creation:  ${CACHE_CREATION}"
+else
+  echo ""
+  echo "⚠ OTelログが見つかりません: ${OTEL_LOG}"
+  echo "  手動でトークン数を入力してください"
+  read "INPUT_TOKENS?  Input tokens:   "
+  read "OUTPUT_TOKENS?  Output tokens:  "
+  CACHE_READ=0
+  CACHE_CREATION=0
+fi
+
+TOTAL_TOKENS=$((INPUT_TOKENS + OUTPUT_TOKENS))
+
+# ツール呼び出し回数（手動入力）
+read "TOOL_CALLS?ツール呼び出し回数: "
+read "SUCCESS?タスク成功? (y/n): "
 
 if [ "$SUCCESS" = "y" ]; then
   SUCCESS_STR="YES"
@@ -80,24 +114,21 @@ else
   SUCCESS_STR="NO"
 fi
 
-TOTAL_TOKENS=$((INPUT_TOKENS + OUTPUT_TOKENS))
-
 # デバッグログ保存
-LOG_DEST="${LOGS_DIR}/${TRIAL_ID}.txt"
+DEBUG_DEST="${LOGS_DIR}/${TRIAL_ID}-debug.txt"
 CONTEXT_MAX="N/A"
+TOKENS_CSV=""
 if [ -f "$HOME/.claude/debug/latest" ]; then
-  cp "$HOME/.claude/debug/latest" "$LOG_DEST"
+  cp "$HOME/.claude/debug/latest" "$DEBUG_DEST"
   echo ""
-  echo "✓ デバッグログ保存: ${LOG_DEST}"
+  echo "✓ デバッグログ保存: ${DEBUG_DEST}"
 
-  # autocompact tokens を抽出
-  TOKENS_CSV=$(grep "autocompact: tokens=" "$LOG_DEST" | sed 's/.*tokens=\([0-9]*\).*/\1/' | tr '\n' ',')
-  CONTEXT_MAX=$(grep "autocompact: tokens=" "$LOG_DEST" | sed 's/.*tokens=\([0-9]*\).*/\1/' | sort -n | tail -1)
-  echo "  コンテキスト推移: ${TOKENS_CSV%,}"
-  echo "  コンテキスト最大: ${CONTEXT_MAX}"
-else
-  TOKENS_CSV=""
-  echo "⚠ デバッグログが見つかりません"
+  TOKENS_CSV=$(grep "autocompact: tokens=" "$DEBUG_DEST" | sed 's/.*tokens=\([0-9]*\).*/\1/' | tr '\n' ',')
+  CONTEXT_MAX=$(grep "autocompact: tokens=" "$DEBUG_DEST" | sed 's/.*tokens=\([0-9]*\).*/\1/' | sort -n | tail -1)
+  if [ -n "$CONTEXT_MAX" ]; then
+    echo "  コンテキスト推移: ${TOKENS_CSV%,}"
+    echo "  コンテキスト最大: ${CONTEXT_MAX}"
+  fi
 fi
 
 # 個別結果ファイル生成
@@ -116,8 +147,9 @@ cat > "$RESULT_FILE" << RESULT_EOF
 |------|-----|
 | Input tokens | ${INPUT_TOKENS} |
 | Output tokens | ${OUTPUT_TOKENS} |
-| Total tokens | ${TOTAL_TOKENS} |
-| Cost (USD) | ${TOTAL_COST} |
+| Cache read | ${CACHE_READ} |
+| Cache creation | ${CACHE_CREATION} |
+| **Total tokens** | **${TOTAL_TOKENS}** |
 
 ## 補助メトリクス
 
@@ -125,7 +157,7 @@ cat > "$RESULT_FILE" << RESULT_EOF
 - コンテキスト最大トークン数: ${CONTEXT_MAX}
 - タスク成功: ${SUCCESS_STR}
 
-## コンテキスト推移
+## コンテキスト推移 (autocompact)
 
 ${TOKENS_CSV%,}
 RESULT_EOF
@@ -134,6 +166,8 @@ echo ""
 echo "✓ 結果ファイル保存: ${RESULT_FILE}"
 echo ""
 echo "╔════════════════════════════════════════════╗"
-echo "║  ${TRIAL_ID} 完了"
-printf "║  Total: %-10s tokens | Cost: \$%-8s║\n" "${TOTAL_TOKENS}" "${TOTAL_COST}"
+printf "║  %-42s ║\n" "${TRIAL_ID} 完了"
+printf "║  Input:  %-33s ║\n" "${INPUT_TOKENS} tokens"
+printf "║  Output: %-33s ║\n" "${OUTPUT_TOKENS} tokens"
+printf "║  Total:  %-33s ║\n" "${TOTAL_TOKENS} tokens"
 echo "╚════════════════════════════════════════════╝"
