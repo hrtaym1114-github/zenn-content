@@ -2,11 +2,15 @@
 
 ## 計測方法
 
-`CLAUDE_CODE_ENABLE_TELEMETRY=1` で起動すると、デバッグログ (`~/.claude/debug/`) に
-`claude_code.token.usage` メトリクスが記録される。スクリプトがこれを自動パースして
+`CLAUDE_CODE_ENABLE_TELEMETRY=1 OTEL_METRICS_EXPORTER=console` で起動すると、
+デバッグログ (`~/.claude/debug/`) に `claude_code.token.usage` メトリクスが
+`console.log` として記録される。スクリプトがこれを自動パースして
 input/output/cacheRead/cacheCreation 別にトークン数を集計する。
 
-stderrリダイレクト不要。OTelコンソールエクスポーター不要。
+**3つの環境変数すべてが必須:**
+- `CLAUDE_CODE_ENABLE_TELEMETRY=1` — テレメトリ有効化
+- `OTEL_METRICS_EXPORTER=console` — メトリクスをconsole.logとしてデバッグログに出力
+- `OTEL_METRIC_EXPORT_INTERVAL=5000` — 5秒間隔でエクスポート
 
 ## すぐ始める手順
 
