@@ -164,9 +164,13 @@ if [ -f "$DEBUG_DEST" ]; then
   fi
 fi
 
-# ツール呼び出し回数（手動入力）
+# ツール呼び出し回数（デバッグログから自動取得）
+TOOL_CALLS=0
+if [ -f "$DEBUG_DEST" ]; then
+  TOOL_CALLS=$(grep -c "Getting matching hook commands for PreToolUse" "$DEBUG_DEST" 2>/dev/null || echo 0)
+fi
+echo "    ツール呼び出し回数: ${TOOL_CALLS}"
 echo ""
-read "TOOL_CALLS?  ツール呼び出し回数: "
 read "SUCCESS?  タスク成功? (y/n): "
 
 if [ "$SUCCESS" = "y" ]; then
