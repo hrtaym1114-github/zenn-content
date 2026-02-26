@@ -44,18 +44,35 @@ echo ""
 echo "--- 使用プロンプト ---"
 cat "$PROMPT_FILE"
 echo ""
+# 手法に応じてツール制限フラグを生成
+if [ "$METHOD" = "cli" ]; then
+  # CLI試行: Playwright MCPツールを全てブロック → Bash経由のCLIのみ使える
+  TOOL_FLAG='--disallowedTools "mcp__playwright__*"'
+elif [ "$METHOD" = "mcp" ]; then
+  # MCP試行: Bashをブロック → MCPツールのみ使える
+  TOOL_FLAG='--disallowedTools "Bash"'
+fi
+
 echo "─────────────────────────────────────────────"
 echo " 別ターミナルで以下を実行:"
 echo ""
 echo "   CLAUDE_CODE_ENABLE_TELEMETRY=1 \\"
 echo "   OTEL_METRICS_EXPORTER=console \\"
 echo "   OTEL_METRIC_EXPORT_INTERVAL=5000 \\"
-echo "   claude --no-chrome 2>${OTEL_LOG}"
+echo "   claude --no-chrome ${TOOL_FLAG} 2>${OTEL_LOG}"
 echo ""
 echo "   セッション内で:"
 echo "   1. Cmd+V で貼り付け → Enter"
 echo "   2. タスク完了を待つ（介入しない）"
 echo "   3. /exit"
+echo ""
+if [ "$METHOD" = "cli" ]; then
+  echo "   ⚠ mcp__playwright__* ツールはブロック済み"
+  echo "     → Bash経由の playwright-cli のみ使用可能"
+else
+  echo "   ⚠ Bash ツールはブロック済み"
+  echo "     → mcp__playwright__* ツールのみ使用可能"
+fi
 echo "─────────────────────────────────────────────"
 echo ""
 
