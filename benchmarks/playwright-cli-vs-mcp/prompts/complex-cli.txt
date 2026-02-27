@@ -1,4 +1,4 @@
-Bashツールで playwright-cli コマンドを使って https://demo.playwright.dev/todomvc/ を開き、以下の操作を順番に実行してください:
+playwright-cliを使って https://demo.playwright.dev/todomvc/ を開き、以下の操作を順番に実行してください:
 1. 以下の5つのTodoアイテムを追加:
    - "牛乳を買う"
    - "レポートを書く"
@@ -9,4 +9,4 @@ Bashツールで playwright-cli コマンドを使って https://demo.playwright
 3. "Active" フィルタをクリックし、表示されているアイテムを報告
 4. "Completed" フィルタをクリックし、表示されているアイテムを報告
 5. "All" フィルタに戻し、フッターに表示されている残りアイテム数を報告
-MCPツールは使わず、必ずBashからplaywright-cliコマンドを実行してください。操作完了後にブラウザを閉じてください。
+操作完了後にブラウザを閉じてください。
