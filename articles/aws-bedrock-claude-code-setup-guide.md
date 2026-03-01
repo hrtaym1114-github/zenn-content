@@ -3,7 +3,7 @@ title: "【2026年最新】AWS Bedrock × Claude Codeセットアップ完全ガ
 emoji: "☁️"
 type: "tech"
 topics: ["ClaudeCode", "AmazonBedrock", "AWS", "AI", "エンタープライズ"]
-published: false
+published: true
 ---
 
 ## この記事で分かること
@@ -39,7 +39,7 @@ Claude Codeには2つの利用形態があります。
 | 新モデルの利用開始 | 即日 | ほぼ同日（※） |
 | セットアップ | 5分 | 30分〜1時間 |
 
-※ 2026年2月時点、Claude Opus 4.6（2/5）・Sonnet 4.6（2/17）はいずれもAnthropicの発表翌日にはBedrockで利用可能でした。かつては数週間の遅延がありましたが、最近のモデルではほぼ解消されています。
+※ 2026年2月時点、Claude Opus 4.6（2/5）・Sonnet 4.6（2/17）はいずれもAnthropicの発表と同日にBedrockで利用可能でした。かつては数週間の遅延がありましたが、最近のモデルではほぼ解消されています。
 
 **結論**: 個人利用ならAnthropic API直接が手軽。**チーム・企業利用**ではBedrock経由のメリットが大きい。
 
@@ -155,7 +155,7 @@ aws login
 # ブラウザが開き、AWSコンソールの認証情報でログイン
 ```
 
-### 方法E: Bedrock APIキー（2026年新機能・最もシンプル）
+### 方法E: Bedrock APIキー（2025年7月リリース・最もシンプル）
 
 ```bash
 export AWS_BEARER_TOKEN_BEDROCK=your-bedrock-api-key
@@ -476,7 +476,7 @@ aws bedrock-runtime invoke-model \
 | コスト監査が必要 | 限定的 | **CloudTrail/CloudWatch** |
 | セットアップの手軽さ | **5分** | 30分〜1時間 |
 
-※ Opus 4.6は2026年2月5日、Sonnet 4.6は2月17日にそれぞれ発表翌日にBedrock対応。以前のような数週間の遅延はなくなっています。
+※ Opus 4.6は2026年2月5日、Sonnet 4.6は2月17日にそれぞれ発表と同日にBedrock対応。以前のような数週間の遅延はなくなっています。
 
 ## まとめ
 
