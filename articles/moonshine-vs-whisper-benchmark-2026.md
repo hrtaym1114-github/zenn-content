@@ -3,7 +3,7 @@ title: "【実測検証】Moonshine Voice vs Whisper — RTX 2000 Adaで全モ�
 emoji: "🎤"
 type: "tech"
 topics: ["whisper", "moonshine", "音声認識", "ベンチマーク", "Python"]
-published: false
+published: true
 ---
 
 ## この記事で分かること
@@ -16,7 +16,7 @@ published: false
 
 ## Moonshine Voice v2 とは
 
-2026年2月にUseful Sensors社（共同創業者: Pete Warden = 元Google TensorFlow Lite開発者）がリリースしたオープンソース音声認識ツールキット。
+2026年2月にUseful Sensors社（CEO兼共同創業者: Pete Warden = 元Google TensorFlow Liteチーム技術リード、TensorFlowチーム創設メンバー）がリリースしたオープンソース音声認識ツールキット。
 
 **公式ベンチマーク（MacBook Pro）:**
 
@@ -126,7 +126,7 @@ Faster-Whisper-tiny は RTF = 0.011、つまり **リアルタイムの90倍速*
 
 :::message
 **Moonshineの精度について:**
-Moonshine Voice v2の公式WER 6.65%はLibriSpeech test-cleanでの計測値。我々のテスト音声（オーディオブック）はLibriSpeechとは異なる録音条件のため、直接比較は参考値。
+Moonshine Voice v2の公式WER 6.65%は**HuggingFace Open ASR Leaderboard**の複数データセットの平均値（LibriSpeech test-clean単体では約2.11%）。我々のテスト音声（オーディオブック）はこれらとは異なる録音条件のため、直接比較は参考値。
 :::
 
 ## 結果3: メモリ使用量
