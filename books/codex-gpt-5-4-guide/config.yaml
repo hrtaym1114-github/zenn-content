@@ -1,0 +1,21 @@
+title: "Codex GPT-5.4 完全ガイド — OpenAI最新モデルとコーディングエージェントの全貌"
+summary: "2026年3月リリースのGPT-5.4とCodexプラットフォームを網羅的に解説。Computer Use、Tool Search、Extreme Reasoningなどの新機能からAPI利用法、料金体系、Claude Opus 4.6との比較まで、エンジニア・開発者が知るべきすべてを1冊にまとめました。"
+topics: ["openai", "gpt", "ai", "codex"]
+published: true
+price: 0
+toc_depth: 2
+chapters:
+  - introduction
+  - what-is-gpt-5-4
+  - gpt-5-series-evolution
+  - codex-cloud-agent
+  - computer-use
+  - tool-search
+  - reasoning-and-thinking
+  - codex-app-multi-agent
+  - api-guide
+  - pricing
+  - benchmarks
+  - competitor-comparison
+  - best-practices
+  - appendix
