@@ -1,5 +1,5 @@
 ---
-title: "【2026年最新】Claude Code Learning Mode 完全ガイド — /config と /output-style の違いから TODO(human) 運用まで"
+title: "Claude Code Learning Mode 完全ガイド — /output-style と TODO(human) の実務運用"
 emoji: "🧑‍🏫"
 type: "tech"
 topics: ["ClaudeCode", "Anthropic", "Claude", "AI", "生成AI"]
