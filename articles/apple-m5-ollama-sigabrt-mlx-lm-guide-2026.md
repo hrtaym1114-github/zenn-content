@@ -1,5 +1,5 @@
 ---
-title: "【2026年最新】Apple M5でOllamaがSIGABRTクラッシュする問題を整理する — Ollama / mlx_lm / llama.cpp の使い分けと回避策"
+title: "【2026年最新】Apple M5でOllamaがSIGABRTクラッシュする問題を整理 — mlx_lm 代替手段"
 emoji: "💥"
 type: "tech"
 topics: ["Ollama", "MLX", "AppleSilicon", "LLM", "macOS"]
