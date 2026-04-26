@@ -1,5 +1,5 @@
 ---
-title: "【2026年最新】pyenv・pyenv-win・rye・poetry・uv を整理する完全ガイド — Pythonパッケージ管理「5ツール戦国時代」を終わらせる1本"
+title: "【2026年最新】pyenv・rye・poetry・uvを整理する完全ガイド — Python 5ツール戦国時代を終わらせる"
 emoji: "📦"
 type: "tech"
 topics: ["Python", "uv", "pyenv", "Poetry", "Rye"]
