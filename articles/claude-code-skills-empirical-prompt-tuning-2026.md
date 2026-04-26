@@ -1,10 +1,18 @@
 ---
-title: "【2026年最新】Claude Code Skillsを「経験的に最適化する」完全ガイド — empirical-prompt-tuningとSkill Creatorの違いから収束判定まで"
+title: "【2026年最新】Claude Code Skillsを経験的に最適化する完全ガイド — Skill Creatorとの違いと収束判定"
 emoji: "🔬"
 type: "tech"
 topics: ["ClaudeCode", "Skills", "Prompt", "AI", "LLM"]
 published: false
 ---
+
+<!--
+## メタデータ（Obsidian管理用・Zenn側には公開されない）
+- **ステータス**: 下書き（修正適用済み）
+- **スラッグ**: empirical-prompt-tuning-claude-code-skill-auto-optimize-2026
+- **ファクトチェック**: 済（2026-04-21 Genspark / [[20260421_zenn-empirical-prompt-tuning-factcheck]]）
+- **ファクトチェック修正**: 済（2026-04-21 — アンチパターン8選化・skill-creator 4モード明記・公開日4/19・8ステップ統一）
+-->
 
 ## この記事で分かること
 

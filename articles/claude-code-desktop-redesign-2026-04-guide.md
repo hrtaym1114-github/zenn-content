@@ -1,5 +1,5 @@
 ---
-title: "【2026年最新】Claude Code Desktop 再設計を使いこなす完全ガイド — 3つのClaudeの混乱整理から並列セッション・サイドチャット活用まで"
+title: "【2026年最新】Claude Code Desktop 再設計完全ガイド — 3つのClaudeの混乱整理と並列セッション活用"
 emoji: "🖥️"
 type: "tech"
 topics: ["ClaudeCode", "Claude", "AI", "Anthropic", "productivity"]

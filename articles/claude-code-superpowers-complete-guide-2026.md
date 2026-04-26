@@ -1,5 +1,5 @@
 ---
-title: "【2026年最新】obra/superpowersでClaude Codeを規律化する完全ガイド — 6つの関連リポジトリの違いから14スキル活用法まで"
+title: "【2026年最新】obra/superpowersでClaude Codeを規律化する完全ガイド — 6リポジトリと14スキル活用"
 emoji: "🦸"
 type: "tech"
 topics: ["ClaudeCode", "AIエージェント", "TDD", "Plugin", "OSS"]
