@@ -6,23 +6,6 @@ topics: ["Ollama", "MLX", "AppleSilicon", "LLM", "macOS"]
 published: true
 ---
 
-<!--
-ファクトチェック: 済（2026-04-26 Genspark Agentic Cross-Check）
-レポート: 03_Input/Fact-Check/20260426_zenn-apple-m5-ollama-sigabrt-mlx-lm-guide-2026-factcheck.md
-ファクトチェック修正: 済（2026-04-26 高優先度5件すべて反映）
-- ✅ Issue #15448 環境記述を「同じmacOS 26.3.x環境（メモリ・バージョン異なる）」に修正
-- ✅ Ollamaブログ引用を直接引用ではなく間接記述に変更（「Please make sure...」を併記）
-- ✅ TTFT 4倍の出典を Apple機械学習研究ブログ（M4比、Qwen3-14B-MLX-4bit 4.06倍）に修正
-- ✅ Ollama 0.19 速度向上を「Ollama 0.18比、Qwen3.5-35B-A3B モデル比較」と前提明記
-- ✅ Issue #15748 タイトルに「to initialize Metal」を追加
-
-未対応（中優先度）:
-- Contra Collective「15-30%、メモリ10%少」の数値を独立検証
-- mlx-vlm 開発者「Prince Canuma 氏」の出典追加
-- mlx_lm Qwen3-4B 48.75 tok/s と公式 BENCHMARKS の桁差の考察
--->
-
-
 ## この記事で分かること
 
 新しい M5 Mac を買った瞬間、こんな経験はないだろうか。
