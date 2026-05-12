@@ -11,6 +11,10 @@ published: true
 ![Genspark CLI（gsk）— ターミナル中心に検索・画像・動画・音声・ファクトチェックの5機能が接続される等角投影図](/images/genspark-cli-claude-code-subagent-guide-2026/eyecatch.png)
 *アイキャッチ画像も `gsk img -m nano-banana-2` で生成（33.9秒・387KB・16:9）。本記事の主張を自分自身で実証。*
 
+:::message
+**🔄 2026-05-12 追記**: `gsk task slides` の内部モデルが **Claude Sonnet 4.5（Legacy）** であることを実機で確認しました。新セクション **「7.5 ★【追記】内部モデル発見 — Claude × Claude入れ子構造の正体」** を追加。Anthropic公式用語（Alias / Full ID）の整理、Sonnet 4.5 が Legacy 分類になっている意味、ピン留め設計の合理性まで踏み込んで解説します。
+:::
+
 ## 1. この記事で分かること
 
 Claude Code を使っていて、こんな瞬間ありませんか?
@@ -267,6 +271,84 @@ CI では `GSK_API_KEY`、ローカルでは `~/.genspark-tool-cli/config.json` 
 
 ---
 
+## 7.5 ★【2026-05 追記】内部モデル発見 — gsk task slides は Claude Sonnet 4.5 を呼んでいた
+
+ベストプラクティスをひととおり押さえたところで、もう1つ重要な発見を共有します。
+
+2026年5月時点で `gsk task slides` の出力ログを覗いたところ、内部実装で **Claude Sonnet 4.5（Anthropic製）** が動いていることが判明しました。「Genspark = Google系」のイメージで止まっていた人は、ぜひ自分の手で JSON を覗いてみてください。
+
+![Inside Genspark CLI (gsk) — The Hidden Claude Sonnet 4.5 and Claude × Claude Nesting Explained](/images/genspark-cli-claude-code-subagent-guide-2026/internal-claude-discovery-infographic.png)
+*4つの観点でgskの内部構造を解剖：発見・4ツールマップ・Claude × Claude入れ子構造・アンチパターン*
+
+### 確認手順（実機検証）
+
+`gsk task slides` を1回実行して、生成ログ全体を保存します。3枚指定で約3分（8枚指定だと約7-8分）で完了します。
+
+```bash
+time gsk task slides \
+    --task_name "verify-model" \
+    --query "AI agent連携の3つの基本パターンについて、3枚のスライドで簡潔に説明" \
+    --instructions "1280x720 16:9。各スライド300字以内。日本語" \
+    -o ~/temp/output.pptx > ~/temp/full-log.txt 2>&1
+```
+
+ログから内部モデル ID を抽出:
+
+```bash
+grep -o '"project_mainloop_model":[^,}]*' ~/temp/full-log.txt
+```
+
+実際の出力:
+
+```json
+"project_mainloop_model": "claude-sonnet-4-5-20250929"
+```
+
+これは **Anthropic の Claude Sonnet 4.5（2025-09-29 リリース版）** の Full ID（完全ID）です。検証したのは 2026-05-12、gsk v1.0.15 時点。
+
+### Anthropic公式用語: Alias vs Full ID
+
+モデル ID 表記には Anthropic 公式が定義する用語があります。
+
+| 用語 | ID例 | 用途 |
+|------|------|------|
+| **Alias（エイリアス／推奨短縮形）** | `claude-sonnet-4-5` | 公式が "use this" として案内 |
+| **Full ID（バージョン付き完全ID）** | `claude-sonnet-4-5-20250929` | 固定バージョン指定向け |
+
+出典: [Anthropic公式モデルカタログ（anthropics/skills GitHub）](https://github.com/anthropics/skills/blob/main/skills/claude-api/shared/models.md)
+
+gsk が **Full ID（バージョン付き）** を露出している点は、内部実装の特定再現性を担保する設計（モデル自動アップグレードによる挙動変化の防止）として合理的です。エンタープライズ用途や検証実験では、Alias ではなく Full ID で固定するのがベストプラクティス。
+
+### Sonnet 4.5 は Legacy Model — 意図的なピン留め
+
+ここが本セクションの核心です。
+
+**2026年5月時点で Claude Sonnet 4.5 は Anthropic のカタログ上 Legacy 分類** に入っています（現行推奨は Sonnet 4.6 / Opus 4.7 世代）。
+
+つまり gsk task slides は **意図的に Sonnet 4.5 にピン留め** している可能性が高い。CLI ベンダーが旧バージョンを固定するのは、挙動変化リスクを回避する合理的な選択です。
+
+逆に言えば、**Claude Code から gsk を呼ぶときの内部モデルは「自動で最新になる」わけではない** と覚えておく必要があります。「Claude Code（最新）→ gsk → Sonnet 4.5（Legacy）」というモデル世代の組み合わせが、知らないうちに発生しているのです。
+
+### 「Claude × Claude」入れ子構造の含意
+
+Claude Code から gsk task slides を呼ぶと、何が起きているか:
+
+1. Claude Code（Sonnet 4.6 / Opus 4.7 等の現行モデル）が `gsk` を呼ぶ
+2. gsk 内部で **Sonnet 4.5（Legacy・固定）** がスライド構造を構築
+3. 結果が Claude Code に戻る
+
+Claude が Claude を呼んで Claude が処理して Claude に返ってくる、**入れ子の Claude × Claude 連携が成立** しています。
+
+実用面の含意:
+
+- **コスト**: 入れ子の各層で課金が発生する。「Claude Code 単体で書ける文章を gsk task に投げる」のは二重課金になる
+- **品質**: 内部 Sonnet 4.5 は Legacy なので、最新モデルとは挙動が微妙に異なる。pptx 生成のような「成熟タスク」では問題ないが、最新の推論能力を期待すると裏切られる
+- **障害切り分け**: gsk が変な出力を返したとき、上流（gsk オーケストレーション側）の問題か、下流（Sonnet 4.5）の問題か切り分け可能になる
+
+この入れ子構造を理解すると、subagent 設計時の **「役割分担と二重コスト回避」** という原則がより具体的になります。
+
+---
+
 ## 8. ★ アンチパターン6選 — やりがちな間違い
 
 ### ❌ 1. 古いモデル名をコピペする
@@ -365,6 +447,7 @@ CIが「昨日まで動いてたのに突然失敗」する原因の典型。本
 - Claude Code の **subagent として組み込むのが最大の価値**。Web検索・画像生成・ファクトチェックが Claude Code 内で完結する。
 - `cross_check` は実測 91秒で複数ソースから Evidence を返す。**自動ファクトチェック基盤になる**。
 - 公式ヘルプの `gsk img --help` を必ず確認。古いモデル名（`flux/dev` 等）はもう動かない。
+- **【2026-05 追記】** `gsk task slides` の内部は **Claude Sonnet 4.5（Legacy・Full ID指定）** で動いている。**Claude × Claude の入れ子構造** が CLI レイヤで成立しており、これがコスト最適化・障害切り分け・モデル世代意識のヒントになる。
 - 競合ではなく補完。Claude Code × `gsk` の組み合わせで「ターミナルで完結するAIワークスペース」が手に入る。
 
 明日のClaude Code環境を変えたい人は、`npm i -g @genspark/cli` から5分で試せます。
