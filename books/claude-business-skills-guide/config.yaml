@@ -1,0 +1,25 @@
+title: "Claude仕事術 — 今日から使えるAI実践ワークフロー"
+summary: |
+  Projects・Artifacts・Coworkで変わるドキュメント作成、情報整理、チーム業務。
+  ChatGPTとの違いから始まり、Claudeの強みを活かす13のワークフローを丁寧に解説。
+  プロンプトの5原則、業務別テンプレート、チーム導入ロードマップまで、
+  読んだその日から使える実践ガイドです。全85,000字・全13章。
+topics: ["claude", "ai", "business", "productivity", "chatgpt"]
+published: false
+price: 1980
+type: "tech"
+toc_depth: 2
+chapters:
+  - 01-why-claude
+  - 02-setup
+  - 03-projects
+  - 04-artifacts
+  - 05-files-excel
+  - 06-prompt-principles
+  - 07-documents
+  - 08-information
+  - 09-email
+  - 10-ideation
+  - 11-team-deployment
+  - 12-cowork
+  - 13-future
