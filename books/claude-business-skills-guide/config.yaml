@@ -5,7 +5,7 @@ summary: |
   プロンプトの5原則、業務別テンプレート、チーム導入ロードマップまで、
   読んだその日から使える実践ガイドです。全85,000字・全13章。
 topics: ["claude", "ai", "business", "productivity", "chatgpt"]
-published: false
+published: true
 price: 1980
 type: "tech"
 toc_depth: 2
