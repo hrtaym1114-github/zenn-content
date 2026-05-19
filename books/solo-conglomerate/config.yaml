@@ -1,0 +1,18 @@
+title: "Claude Codeで作る「1人総合商社」"
+summary: "AIエージェント組織で副業を自動化する技術 — 実運用3ヶ月・68コマンド・29エージェントの全設計図"
+topics: ["claudecode", "ai", "副業", "obsidian", "agent"]
+published: true
+price: 1900
+chapters:
+  - 00-intro
+  - 01-claude-md-philosophy
+  - 02-folder-naming-flow
+  - 03-custom-commands
+  - 04-agent-org-pattern
+  - 05-channel-agents
+  - 06-agent-teams
+  - 07-daily-workflow
+  - 08-content-pipeline
+  - 09-hooks
+  - 10-ai-publishing-house
+  - 11-failures-and-iterations
