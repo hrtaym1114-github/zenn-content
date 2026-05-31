@@ -1,5 +1,5 @@
 ---
-title: "【2026年最新】LFM2.5-8B-A1B をApple Siliconで実測する完全ガイド — 「1月のLFM2.5」との違いと、普通のMacで本当に出る速度"
+title: "【2026年最新】LFM2.5-8B-A1Bを実測 — 「1月のLFM2.5」との違いと普通のMacの速度"
 emoji: "⚡"
 type: "tech"
 topics: ["LLM", "ローカルLLM", "AppleSilicon", "Ollama", "mlx"]
