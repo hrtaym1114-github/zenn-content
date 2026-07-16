@@ -1,5 +1,5 @@
 ---
-title: "【2026年最新】iPhoneで動くBonsai 27B完全ガイド — 「Bonsai」と「Ternary-Bonsai」の違いからモデル選択まで"
+title: "【2026年最新】Bonsai 27B完全ガイド — iPhoneで動く1-bit版とTernary版の違い・選び方"
 emoji: "🌳"
 type: "tech"
 topics: ["LLM", "mlx", "llamacpp", "AI", "iOS"]
