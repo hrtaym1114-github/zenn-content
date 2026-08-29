@@ -1,5 +1,5 @@
 title: "Claude Codeで作る「1人総合商社」"
-summary: "AIエージェント組織で副業を自動化する技術 — 実運用3ヶ月・68コマンド・29エージェントの全設計図"
+summary: "実運用8ヶ月・84コマンド・28エージェント・無人運用19本。Claude Codeでエージェント組織を組んで副業を回した全設計図と、収益3,385円の全内訳。自己改善ループが暴走した記録まで開示する【2026-08 第2版・4章追加】"
 topics: ["claudecode", "ai", "obsidian", "agent", "automation"]
 published: true
 price: 1900
@@ -17,3 +17,7 @@ chapters:
   - 09-hooks
   - 10-ai-publishing-house
   - 11-failures-and-iterations
+  - 12-rules-layer
+  - 13-unattended-gha
+  - 14-self-improving-loop
+  - 15-revenue-reality
