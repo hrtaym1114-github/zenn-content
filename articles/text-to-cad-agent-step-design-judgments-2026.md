@@ -3,7 +3,7 @@ title: "text-to-cadを整理する — エージェントにSTEPを書かせる�
 emoji: "📐"
 type: "tech"
 topics: ["CAD", "AIエージェント", "ClaudeCode", "Cursor", "製造業"]
-published: false
+published: true
 ---
 
 ## この記事で分かること
