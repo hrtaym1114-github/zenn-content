@@ -1,0 +1,15 @@
+title: "Claude Code・Codexの指示ファイルを腐らせない運用術 — 1,051件の警告を仕分けた監査記録"
+summary: "AGENTS.md・CLAUDE.md・rules・skillsは、書いた瞬間から腐り始める。個人運用のリポジトリで実際に行った監査（2026-10-03）の差分と、LLMなしの静的チェックで出た1,051件の警告（2026-10-12時点のコミット）を、腐り方ごとに仕分けた記録。前半の無料章で腐る仕組みと検知手段の比較を、有料章で監査ログと静的lint・LLM監査の答え合わせ、仕分けの基準、hooks・CIの手順（実際に動かした出力つき）、チェックリストを渡す。"
+topics: ["claudecode", "codex", "agentsmd", "ai", "lint"]
+published: false
+price: 1500
+toc_depth: 2
+chapters:
+  - 00-intro
+  - 01-how-docs-rot
+  - 02-detection-methods
+  - 03-what-official-docs-say
+  - 04-audit-log-2026-10-03
+  - 05-lint-1051-findings
+  - 06-fix-and-prevent
+  - 07-checklist
