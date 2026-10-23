@@ -7,11 +7,11 @@ published: false
 ---
 
 :::message alert
-**この記事で扱う3つの問題のうち、どれもリリース版ではまだ直っていません。**
+**この記事で扱う4つの問題のうち、どれもリリース版ではまだ直っていません。**
 
 - 対象: [api-budget-guard](https://github.com/hrtaym1114-github/api-budget-guard) [v0.1.1](https://github.com/hrtaym1114-github/api-budget-guard/releases/tag/v0.1.1)（コミット `1ed0dc9`。2026-10-22 時点の `main` と同じ）
-- 確認日: 2026-10-22（JST）。Linux / Python 3.13.5 の1台で再現
-- 修正の状態: NaN と負の金額は、修正ブランチ `claude/v0.1.1-hardening-20261020` で拒否されることを確認しました。ただし**このブランチは未マージで、リリースもされていません**。失敗した実行が記録されない問題は、修正ブランチでも直っていません
+- 確認日: 2026-10-22〜23（JST）。Linux / Python 3.13.5 の1台で再現
+- 修正の状態: コマンドの引数で渡した NaN と負の金額は、修正ブランチ `claude/v0.1.1-hardening-20261020` で拒否されることを確認しました。ただし**このブランチは未マージで、リリースもされていません**。**設定ファイルの単価が NaN や負の値だと素通りする問題と、失敗した実行が記録されない問題は、修正ブランチでも直っていません**
 - v0.1.1 を使っている場合の回避策は、後半の「v0.1.1 を使い続ける場合の回避策」の節にまとめました
 :::
 
@@ -144,11 +144,58 @@ $ api-budget-guard run --routine keyword-watch --call search_posts_all:50 -- pyt
 
 実際の API ジョブは、何件か呼んで課金されたあとで失敗することがあります。失敗すると cron が次の回に同じジョブをもう一度走らせるので、失敗が続くほど、課金されているのに記録されない実行が積み上がります。「成功したときだけ記録する」は会計としては自然に見えますが、上限の判定に使う記録としては、止める方向とは逆に倒れていました。README にも「成功したあとに記録する」と書いていたので、仕様どおりの動きです。仕様の段階で fail-closed になっていませんでした。
 
-## 3つに共通していたこと
+## 失敗記録4: 単価設定の素通り（未修正）
+
+:::message alert
+v0.1.1（`main`）で再現。**修正ブランチ（未マージ）でも同じ結果で、未修正です。**
+:::
+
+修正ブランチでは、`--usd` の NaN と負の値は拒否されるようになりました。ところが、見積もりのもとになる設定ファイル（`budget.json`）の単価は検証されていませんでした。`--call` や `--objects` で件数を渡すと、ガードは「単価 × 件数」で金額を計算します。この単価が NaN や負の値でも、そのまま計算に使われます。
+
+比較のため、まず正常な単価（`post_read` が 0.005）で1000件を見積もります。$5.00 になり、1回あたりの上限 $0.25 を超えるので拒否されます。
+
+```
+$ api-budget-guard check --routine keyword-watch --call search_posts_all:1000
+[deny] keyword-watch: estimate $5.000; spent $0.000 of $0.80; estimate exceeds per-run cap $0.250; ...
+[exit 20]
+```
+
+同じ設定の `post_read` を `NaN` にすると、修正ブランチでも `go` になります。JSON に `NaN` と書いても、文字列の `"nan"` と書いても同じでした。
+
+```
+$ api-budget-guard check --routine keyword-watch --call search_posts_all:1000
+[go] keyword-watch: estimate $nan; spent $0.000 of $0.80; within budget
+[exit 0]
+```
+
+`check` だけを繰り返す使い方なら、何回呼んでも `go` です。`run` で包んだ場合は、ジョブが1回起動して成功し、台帳に `"cost_usd": NaN` の行が書かれます。修正ブランチは台帳の NaN を検出するので、次の判定からは `Denied: ledger row has invalid cost_usd at line 1` で止まります。v0.1.1 は台帳の NaN も通すので、止まりません。
+
+単価を負の値（-0.005）にすると、修正ブランチでも支出の合計を減らせます。上限ちょうどまで使って拒否されている状態から試しました。
+
+```
+$ api-budget-guard record --routine keyword-watch --tool search_posts_all --objects 160
+Recorded keyword-watch search_posts_all: $0.800
+$ api-budget-guard check --routine keyword-watch --call search_posts_all:10
+[deny] keyword-watch: estimate $0.050; spent $0.800 of $0.80; routine phase cap reached: $0.800 spent of $0.800
+[exit 20]
+(budget.json の post_read を -0.005 に書き換える)
+$ api-budget-guard record --routine keyword-watch --tool search_posts_all --objects 1000
+Recorded keyword-watch search_posts_all: $-5.000
+[exit 0]
+$ api-budget-guard check --routine keyword-watch --call search_posts_all:10
+[go] keyword-watch: estimate $-0.050; spent $-4.200 of $0.80; within budget
+[exit 0]
+```
+
+ここまでは v0.1.1 と修正ブランチで同じ出力でした。修正ブランチの台帳の検証は「有限の数値か」だけを見ていて、符号は見ていません。そのため、$-5.000 の行は通ってしまいます。
+
+修正ブランチの設定ファイルの検証は、しきい値・期間の上限・1回あたりの上限が有限の数値かを確かめるようになっていました。単価だけはその対象に入っておらず、`float(cfg["pricing"][...][key])` で読んだ値がそのまま使われます。設定ファイルを書き換えられるのは運用している本人なので、外からの攻撃というよりは設定ミスに耐えられるかどうかの問題です。それでも、単価を手で書き換えたときの符号の打ち間違いや、仮の値として書いた `nan` 1つで、ガードは止める方向には倒れませんでした。
+
+## 4つに共通していたこと
 
 設定ファイルや台帳の欠落、JSON の構文エラーには `20` を返すようにしていて、そこはテストもありました。v0.1.1 のテスト20件はすべて通っています。崩れていたのは別の場所でした。
 
-- **入力の境界**: 「壊れたファイル」は拒否していたのに、「数値として読めるが意味のない値」（NaN、負の金額）は素通りしていた
+- **入力の境界**: 「壊れたファイル」は拒否していたのに、「数値として読めるが意味のない値」（NaN、負の金額）は素通りしていた。修正ブランチでも、引数は直したが設定ファイルの単価は検証の対象から漏れていた
 - **比較の書き方**: 「超えたら拒否」と書くと、比較が成り立たない値は許可側に落ちる。「範囲内なら許可」と書いていれば、NaN は拒否側に落ちていた
 - **記録の経路**: 判定は実行前にしていたのに、記録は成功したときだけだった。失敗した分の支出は、次の判定から見えない
 
@@ -156,7 +203,7 @@ $ api-budget-guard run --routine keyword-watch --call search_posts_all:50 -- pyt
 
 ## v0.1.1 を使い続ける場合の回避策
 
-修正版がリリースされるまでの回避策です。ここに書いたうち、ジョブが失敗したときに自分で記録する方法（下のスクリプト）と台帳の点検（下の Python）は、v0.1.1 で実際に動かして確かめました。
+修正版がリリースされるまでの回避策です。ここに書いたうち、ジョブが失敗したときに自分で記録する方法（下のスクリプト）、台帳の点検（下の Python）、単価の事前チェック（下の `check_pricing.py`）は、v0.1.1 で実際に動かして確かめました。単価の事前チェックは修正ブランチでも同じ結果でした。
 
 - `--usd` に外から値を渡すときは、呼び出す前に「有限で0以上」かを確かめる。単価から計算させてよい場面では `--usd` ではなく `--call` / `--objects` を使う
 - 台帳に NaN や負の `cost_usd` がないか定期的に点検する。見つかった行は手で直す
@@ -184,28 +231,61 @@ fi
 
 この形で、終了コード3で失敗するジョブを繰り返し実行したところ、1回ごとに台帳が1行ずつ増え、4回目は `routine phase cap reached: $0.750 spent of $0.800` で拒否されてジョブが起動しませんでした。ただし、ジョブ自身が `10` や `20` で終わった場合は区別できず記録されません。ジョブ側で使う終了コードを `10` と `20` 以外にしておく必要があります。
 
+- ガードを呼ぶ前に、設定ファイルの単価がすべて「有限で0以上の数値」かを確かめる。だめなら拒否と同じ `20` で終わり、ガードもジョブも起動しない
+
+```python
+# check_pricing.py
+import json, math, sys
+
+path = sys.argv[1] if len(sys.argv) > 1 else "budget.json"
+try:
+    pricing = json.load(open(path, encoding="utf-8"))["pricing"]
+except Exception as exc:
+    print(f"pricing check: cannot read {path}: {exc!r}", file=sys.stderr)
+    sys.exit(20)
+bad = []
+for group, table in pricing.items():
+    for key, value in table.items():
+        ok = (isinstance(value, (int, float)) and not isinstance(value, bool)
+              and math.isfinite(value) and value >= 0)
+        if not ok:
+            bad.append(f"pricing.{group}.{key} = {value!r}")
+if bad:
+    print("pricing check: invalid unit price(s): " + ", ".join(bad), file=sys.stderr)
+    sys.exit(20)
+```
+
+```bash
+python3 check_pricing.py budget.json || exit 20
+api-budget-guard run --routine keyword-watch --call search_posts_all:10 -- ./job.sh
+```
+
+`post_read` を正常値の 0.005、`NaN`、文字列の `"nan"`、-0.005、0 にした5通りで試しました。`NaN`・`"nan"`・-0.005 の3通りは `pricing check: invalid unit price(s): pricing.event.post_read = -0.005` のように出て exit 20 になり、ジョブは起動せず台帳も0行のままでした。0.005 と 0 はそのまま `run` に進み、台帳に1行記録されました。なお、ガードは文字列の `"0.005"` も単価として読めますが、このチェックは数値型以外を拒否するので、文字列で書いた単価も止めます（安全側に倒した過剰検出です）。`check` や `record` を単独で使う場合も、同じように前に置きます。
+
 ## 自分のガードを点検するチェックリスト
 
 api-budget-guard に限らず、自作のガードに当てはまる項目です。
 
 - [ ] 金額・件数の入力は「有限で0以上」だけを受け付けているか（NaN、inf、負の値で試したか）
 - [ ] 上限判定は「範囲内なら許可、それ以外は拒否」の形になっているか。比較できない値が許可側に落ちないか
-- [ ] 台帳や設定から読んだ値も、同じ検証を通しているか（入口だけ検証して、保存済みのデータを信じていないか）
+- [ ] 台帳や設定から読んだ値も、同じ検証を通しているか（入口だけ検証して、保存済みのデータや単価・係数の設定を信じていないか）
 - [ ] 失敗した実行も支出として記録しているか。少なくとも「失敗」の種類を付けて残しているか
 - [ ] ガード自身の拒否と、ジョブの失敗を終了コードで区別できるか
 - [ ] 想定外の例外も拒否の終了コードになるか。呼び出し側は「許可の終了コード以外はすべて止める」と書いているか
 - [ ] テストに、正常系と「ファイルが壊れた」だけでなく、「値がおかしい」「途中で失敗した」ケースがあるか
 - [ ] プロバイダ側の上限やアラートも併せて設定しているか
 
-## 修正の状態（2026-10-22 時点）
+## 修正の状態（2026-10-23 時点）
 
 | 問題 | v0.1.1（`main`） | 修正ブランチ `claude/v0.1.1-hardening-20261020`（未マージ・未リリース） |
 |---|---|---|
 | NaN がすべての判定を通る | 再現 | `Denied: --usd must be a non-negative number: nan`（exit 20） |
 | 負の金額で合計が減る | 再現 | `Denied: --usd must be a non-negative number: -10.0`（exit 20） |
 | 失敗した実行が記録されない | 再現 | 再現（未修正） |
+| 設定ファイルの単価が NaN でも `go` | 再現 | 再現（未修正）。`run` は1回通り、台帳の NaN 行で次から拒否 |
+| 設定ファイルの単価が負で合計が減る | 再現 | 再現（未修正） |
 
-修正ブランチのテストは70件で、すべて通りました。上の表の拒否メッセージは、v0.1.1 と同じ入力を修正ブランチのコードで実行した結果です。
+修正ブランチのテストは70件で、すべて通りました。上の表の拒否メッセージは、v0.1.1 と同じ入力を修正ブランチのコードで実行した結果です。修正ブランチの先頭は 2026-10-23 時点で `c920665` のままで、単価の検証を足すコミットはありません。
 
 同じレビューで見つかった別の問題も1つ、どちらでも未修正です。`balance --usd 3.6 --paid 3.0` のように `--free` を省くと、無料残高が $3.60 として記録され、安全マージンの判定を通ってしまいます（同じ残高を `--free 0.6` で記録すると、$0.25 の見積もりは正しく拒否されました）。回避策は、`balance` では `--free` と `--paid` を両方指定することです。
 
@@ -214,3 +294,4 @@ api-budget-guard に限らず、自作のガードに当てはまる項目です
 - Python 3.13.5 以外のバージョンでの挙動
 - 実際のプロバイダ API を呼ぶジョブでの再現（ジョブは `python3 -c` のダミー）
 - Anthropic と Google Cloud 以外のプロバイダの支出上限の仕様
+- 単価が `Infinity` の場合と、`per_request` 側（リクエスト単位）の単価での挙動（試したのは `per_object` の `post_read` だけ）
